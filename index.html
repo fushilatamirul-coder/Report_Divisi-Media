@@ -1,0 +1,618 @@
+Berikut adalah kode HTML yang telah dimodifikasi untuk menghitung data secara otomatis (simulasi) tanpa koneksi API real-time, sesuai permintaan Anda.
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Interaksi Karyawan | Pawon Mbah Gito - Auto Generate</title>
+    <!-- Font Awesome & Google Font -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <!-- Chart.js (opsional untuk visualisasi jika diperlukan nanti, tetap ringan) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- html2pdf untuk export PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 30px 24px 60px;
+            color: #0f172a;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 2rem;
+            padding: 2rem 2rem 1.8rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 i {
+            background: #f9a825;
+            padding: 10px;
+            border-radius: 30px;
+            color: #1e293b;
+        }
+
+        .sub {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            gap: 20px;
+        }
+
+        .date-badge {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(4px);
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+
+        .auto-badge {
+            background: #10b981;
+            color: white;
+            border-radius: 40px;
+            padding: 6px 18px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* stat cards */
+        .stats-grid {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1rem 1.5rem;
+            flex: 1;
+            min-width: 140px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .stat-card .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #475569;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        /* toolbar & buttons */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-download {
+            background: #10b981;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-download.pdf {
+            background: #ef4444;
+        }
+        
+        .btn-download.csv {
+            background: #3b82f6;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+        
+        .month-picker {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .month-picker input {
+            border: 1px solid #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-family: inherit;
+        }
+
+        /* Tabel */
+        .table-wrapper {
+            background: white;
+            border-radius: 1.8rem;
+            overflow-x: auto;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.05);
+            border: 1px solid #eef2ff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th {
+            background: #f8fafd;
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #334155;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #f1f5f9;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 60px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .rank-1 { background: #fbbf24; color: #1e293b; }
+        .rank-2 { background: #cbd5e1; color: #0f172a; }
+        .rank-3 { background: #fdba74; color: #2d1b0b; }
+
+        .ig-link {
+            color: #d62976;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .badge-no-acc {
+            background: #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .interaction-icons i {
+            margin-right: 8px;
+            font-size: 1rem;
+        }
+
+        .total-point {
+            font-weight: 800;
+            background: #eef2ff;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.75rem;
+            color: #5b6e8c;
+        }
+        
+        /* animasi refresh manual */
+        .refresh-hint {
+            background: #fef9c3;
+            border-radius: 30px;
+            padding: 6px 16px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #854d0e;
+        }
+        
+        @media (max-width: 700px) {
+            body { padding: 16px; }
+            th, td { font-size: 0.75rem; padding: 10px 6px; }
+            .btn-download { padding: 6px 16px; font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fab fa-instagram"></i> Pawon Mbah Gito · Laporan Partisipasi Karyawan</h1>
+        <div class="sub">
+            <div class="date-badge" id="periodDisplay"><i class="far fa-calendar-alt"></i> Periode: 1 - 30 November 2024</div>
+            <div class="auto-badge"><i class="fas fa-robot"></i> OTOMATIS · Simulasi Data Internal</div>
+        </div>
+        <div style="margin-top: 16px; font-size: 13px; background: #2d3a4b; padding: 8px 15px; border-radius: 40px; display: inline-flex; gap: 12px; flex-wrap: wrap;">
+            <span><i class="fas fa-chart-line"></i> Sistem hitung otomatis (tanpa API Instagram)</span>
+            <span><i class="fas fa-sync-alt"></i> Ubah bulan & klik "Tampilkan" untuk generate ulang</span>
+        </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="toolbar">
+        <div class="month-picker">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Bulan Laporan:</span>
+            <input type="month" id="monthSelector" value="2024-11">
+            <button id="refreshMonthBtn" style="background:#1e293b; color:white; border:none; padding:5px 12px; border-radius:20px; cursor:pointer;"><i class="fas fa-chart-simple"></i> Generate Data</button>
+        </div>
+        <div class="btn-group">
+            <button class="btn-download csv" id="downloadCsvBtn"><i class="fas fa-file-excel"></i> Download CSV (Bulanan)</button>
+            <button class="btn-download pdf" id="downloadPdfBtn"><i class="fas fa-file-pdf"></i> Download PDF (Laporan)</button>
+        </div>
+    </div>
+
+    <div class="table-wrapper" id="reportContainer">
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>Peringkat</th><th>No</th><th>Nama Karyawan</th><th>Akun Instagram</th><th><i class="fas fa-heart"></i> Like</th><th><i class="fas fa-comment"></i> Komen</th><th><i class="fas fa-retweet"></i> Share/Repost</th><th><i class="fas fa-bookmark"></i> Save</th><th>Total Skor</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="9" style="text-align:center">🔍 Menghasilkan data laporan otomatis... </td></tr>
+            </tbody>
+        </table>
+    </div>
+    <footer>
+        ⚡ <strong>Sistem hitung mandiri (offline)</strong> : Data interaksi (like, komen, share, save) di-generate secara algoritmik berdasarkan bulan dan nama karyawan. Tidak terhubung ke API Instagram manapun.<br>
+        ✅ <strong>Fitur Download Data Bulanan:</strong> CSV (Excel) & PDF - Data sesuai periode bulan yang dipilih.
+    </footer>
+</div>
+
+<script>
+    // Daftar karyawan (55 orang sesuai daftar)
+    const employeesRaw = [
+        { no:1, name:"SAMBAS", ig:"sambas8619", hasAccount:true }, { no:2, name:"CHARIKA", ig:"charikamyln", hasAccount:true },
+        { no:3, name:"KAMAL", ig:"mallxyxx", hasAccount:true }, { no:4, name:"SONI", ig:"soninurjamanakunbaru", hasAccount:true },
+        { no:5, name:"AGUNG", ig:"agunghasanudin_5", hasAccount:true }, { no:6, name:"BAYU", ig:"aazmibayu", hasAccount:true },
+        { no:7, name:"ROHMAN", ig:"fthr.rohmann", hasAccount:true }, { no:8, name:"PUTRI", ig:"ptrichntka18_", hasAccount:true },
+        { no:9, name:"SOFAR", ig:"madsosio", hasAccount:true }, { no:10, name:"AWLIYA", ig:"matchamin_t", hasAccount:true },
+        { no:11, name:"JAELANI", ig:"ahmad.z83463", hasAccount:true }, { no:12, name:"LISA", ig:"Lisallty_", hasAccount:true },
+        { no:13, name:"RAFI", ig:"Mrafii12_", hasAccount:true }, { no:14, name:"RISKA", ig:"Rskendh", hasAccount:true },
+        { no:15, name:"FATHIYA", ig:"Fathiyarn_", hasAccount:true }, { no:16, name:"ROSA", ig:"Hy.rosaaa", hasAccount:true },
+        { no:17, name:"SIPA", ig:"Sipak.khoerunisa", hasAccount:true }, { no:18, name:"SYAFIQ", ig:"syafiqull72", hasAccount:true },
+        { no:19, name:"ARI", ig:"ariestyo", hasAccount:true }, { no:20, name:"HABIB", ig:"habib.dea2208", hasAccount:true },
+        { no:21, name:"DEWI", ig:"deeegituu_", hasAccount:true }, { no:22, name:"RAHMA", ig:"rahmaangtys_", hasAccount:true },
+        { no:23, name:"DESTRA", ig:"gendon_uyeee", hasAccount:true }, { no:24, name:"ANDI", ig:"panggilandisaja", hasAccount:true },
+        { no:25, name:"AFAN", ig:"afanfb_", hasAccount:true }, { no:26, name:"HARI", ig:"", hasAccount:false },
+        { no:27, name:"MARYONO", ig:"", hasAccount:false }, { no:28, name:"WANTI", ig:"Sriwnth", hasAccount:true },
+        { no:29, name:"YUDHA", ig:"dhaakach", hasAccount:true }, { no:30, name:"SEPTIAN", ig:"sptnchydi", hasAccount:true },
+        { no:31, name:"DONNY", ig:"Donnird12", hasAccount:true }, { no:32, name:"ANIS", ig:"Anissalkhkmh_", hasAccount:true },
+        { no:33, name:"AXL", ig:"axllsamm", hasAccount:true }, { no:34, name:"SOLIHIN", ig:"Maad11_s", hasAccount:true },
+        { no:35, name:"FATHUL", ig:"fthuuulzmy", hasAccount:true }, { no:36, name:"SHIFA", ig:"Shifamirazaq.cicip", hasAccount:true },
+        { no:37, name:"ARIF", ig:"Arif_sunandra", hasAccount:true }, { no:38, name:"HERU", ig:"", hasAccount:false },
+        { no:39, name:"ADHITYA", ig:"Adhityapril_", hasAccount:true }, { no:40, name:"AMIR", ig:"Amirul_fushilat", hasAccount:true },
+        { no:41, name:"ERMAWAN", ig:"Ermawantrisetyadi", hasAccount:true }, { no:42, name:"MAHESA", ig:"mahesarendraindra", hasAccount:true },
+        { no:43, name:"ABIDIN", ig:"Abidin_912", hasAccount:true }, { no:44, name:"BU ANIS", ig:"Aniest_87", hasAccount:true },
+        { no:45, name:"BU SRI", ig:"", hasAccount:false }, { no:46, name:"BU KENUK", ig:"Rudi_hartanti", hasAccount:true },
+        { no:47, name:"BU NOVI", ig:"", hasAccount:false }, { no:48, name:"BU IDA", ig:"Idayani3534", hasAccount:true },
+        { no:49, name:"BU SUKAP", ig:"", hasAccount:false }, { no:50, name:"BU TUTUT", ig:"", hasAccount:false },
+        { no:51, name:"PAK SLAMET", ig:"", hasAccount:false }, { no:52, name:"PAK SUPRI", ig:"", hasAccount:false },
+        { no:53, name:"PAK TUMIRAN", ig:"", hasAccount:false }, { no:54, name:"PAK TUGIMAN", ig:"", hasAccount:false },
+        { no:55, name:"PAK BAGYO", ig:"", hasAccount:false }
+    ];
+
+    // Variable global untuk menyimpan data laporan terbaru (sesuai bulan)
+    let currentReportData = [];
+    let currentMonth = "2024-11";
+
+    /**
+     * Fungsi menghasilkan interaksi secara deterministik tapi bervariasi per bulan.
+     * Tidak menggunakan API eksternal, murni pseudo-random dengan seed dari nama + bulan.
+     * Menciptakan fluktuasi data antar bulan yang berbeda namun konsisten untuk bulan yang sama (setiap kali generate).
+     */
+    function generateInteractionsForMonth(month, employeeList) {
+        // Parse bulan untuk seed (1-12)
+        const [year, monthNum] = month.split('-');
+        const monthSeed = parseInt(monthNum, 10);
+        const yearSeed = parseInt(year, 10);
+        
+        const interactionMap = new Map();
+        
+        for (let emp of employeeList) {
+            if (!emp.hasAccount || !emp.ig) {
+                interactionMap.set(emp.no, { like: 0, comment: 0, share: 0, save: 0 });
+                continue;
+            }
+            
+            // Buat seed unik berdasarkan nama, nomor, bulan dan tahun -> data konsisten per bulan tapi berbeda-beda antar bulan
+            let baseSeed = (emp.no * 7919) + (monthSeed * 1013) + (yearSeed * 997);
+            // Fungsi random deterministik sederhana (Linear Congruential Generator style)
+            const seededRandom = (seed) => {
+                let s = seed % 2147483647;
+                return () => {
+                    s = (s * 1103515245 + 12345) & 0x7fffffff;
+                    return s / 2147483647;
+                };
+            };
+            
+            let rng = seededRandom(baseSeed);
+            // Variasi tipe karyawan: beberapa punya kecenderungan lebih aktif berdasarkan nama (fair play)
+            let activityFactor = 1.0;
+            const activeNames = ["SAMBAS", "CHARIKA", "KAMAL", "PUTRI", "BAYU", "ROHMAN", "LISA", "RAFI", "DONNY", "ANIS", "SHIFA", "ARIF"];
+            if (activeNames.includes(emp.name)) activityFactor = 1.4;
+            else if (emp.name.startsWith("BU") || emp.name.startsWith("PAK")) activityFactor = 0.85;
+            else activityFactor = 1.0;
+            
+            // Like range 3 - 70, sesuai keaktifan
+            let likeCount = Math.floor(rng() * (45 * activityFactor) + 4);
+            likeCount = Math.min(likeCount, 82);
+            let commentCount = Math.floor(rng() * (22 * activityFactor) + 1);
+            commentCount = Math.min(commentCount, 35);
+            let shareCount = Math.floor(rng() * (15 * activityFactor) + 0);
+            shareCount = Math.min(shareCount, 24);
+            let saveCount = Math.floor(rng() * (28 * activityFactor) + 2);
+            saveCount = Math.min(saveCount, 48);
+            
+            // Sedikit tambahan efek bulan (misal bulan promo lebih tinggi)
+            if (monthSeed === 12 || monthSeed === 6) {
+                likeCount = Math.floor(likeCount * 1.15);
+                commentCount = Math.floor(commentCount * 1.1);
+            } else if (monthSeed === 1) {
+                likeCount = Math.floor(likeCount * 0.9);
+            }
+            
+            interactionMap.set(emp.no, {
+                like: likeCount,
+                comment: commentCount,
+                share: shareCount,
+                save: saveCount
+            });
+        }
+        return interactionMap;
+    }
+
+    // Hitung total skor berdasarkan bobot: like=1, komen=2, share=3, save=1.5
+    function calculateTotal(inter) {
+        return (inter.like * 1) + (inter.comment * 2) + (inter.share * 3) + (inter.save * 1.5);
+    }
+
+    // Membuat laporan utama: sorting, statistik, render tabel
+    async function generateReport(month) {
+        // 1. Dapatkan data interaksi hasil generate internal (tanpa API)
+        const interactionData = generateInteractionsForMonth(month, employeesRaw);
+        
+        // 2. Bentuk baris laporan
+        let reportRows = employeesRaw.map(emp => {
+            const inter = interactionData.get(emp.no) || { like:0, comment:0, share:0, save:0 };
+            const total = calculateTotal(inter);
+            return {
+                ...emp,
+                like: inter.like,
+                comment: inter.comment,
+                share: inter.share,
+                save: inter.save,
+                total: total
+            };
+        });
+        
+        // 3. Pisahkan akun dengan IG dan tanpa IG, sorting
+        const withAccount = reportRows.filter(r => r.hasAccount === true);
+        const withoutAccount = reportRows.filter(r => r.hasAccount === false);
+        
+        // Sort berdasarkan total skor tertinggi ke rendah untuk yang punya akun
+        withAccount.sort((a,b) => b.total - a.total);
+        // Yang tidak punya akun diurutkan berdasarkan nama
+        withoutAccount.sort((a,b) => a.name.localeCompare(b.name));
+        
+        const sortedFull = [...withAccount, ...withoutAccount];
+        
+        // Simpan global untuk export
+        currentReportData = sortedFull;
+        
+        // 4. Update statistik card
+        const totalParticipants = withAccount.length;
+        const totalInteractionsAll = withAccount.reduce((acc, r) => acc + r.like + r.comment + r.share + r.save, 0);
+        const avgScore = withAccount.length ? (withAccount.reduce((acc,r) => acc + r.total,0) / withAccount.length).toFixed(1) : 0;
+        const totalPointsSum = withAccount.reduce((acc,r) => acc + r.total, 0).toFixed(1);
+        
+        const statsHtml = `
+            <div class="stat-card"><div class="label">👥 Karyawan Aktif (punya IG)</div><div class="value">${totalParticipants} / 55</div></div>
+            <div class="stat-card"><div class="label">❤️ Total Interaksi (Like+Komen+Share+Save)</div><div class="value">${totalInteractionsAll.toLocaleString()}</div></div>
+            <div class="stat-card"><div class="label">⭐ Rata-rata Skor Partisipasi</div><div class="value">${avgScore}</div></div>
+            <div class="stat-card"><div class="label">🏆 Total Poin Karyawan Aktif</div><div class="value">${totalPointsSum}</div></div>
+        `;
+        document.getElementById('statsGrid').innerHTML = statsHtml;
+        
+        // 5. Render tabel
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        let rank = 1;
+        
+        for (let i = 0; i < sortedFull.length; i++) {
+            const row = sortedFull[i];
+            let rankDisplay = '';
+            if (row.hasAccount) {
+                let rankClass = '';
+                if (rank === 1) rankClass = 'rank-1';
+                else if (rank === 2) rankClass = 'rank-2';
+                else if (rank === 3) rankClass = 'rank-3';
+                rankDisplay = `<div class="rank-badge ${rankClass}">${rank}</div>`;
+            } else {
+                rankDisplay = `<div class="rank-badge">-</div>`;
+            }
+            
+            const igDisplay = row.hasAccount && row.ig 
+                ? `<a href="#" class="ig-link" onclick="return false;"><i class="fab fa-instagram"></i> @${row.ig}</a>` 
+                : `<span class="badge-no-acc"><i class="fas fa-ban"></i> Tidak punya akun</span>`;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="text-align:center">${rankDisplay}</td>
+                <td>${row.no}</td>
+                <td><strong>${row.name}</strong></td>
+                <td>${igDisplay}</td>
+                <td class="interaction-icons"><i class="fas fa-heart" style="color:#f43f5e;"></i> ${row.like}</td>
+                <td><i class="fas fa-comment" style="color:#3b82f6;"></i> ${row.comment}</td>
+                <td><i class="fas fa-retweet" style="color:#10b981;"></i> ${row.share}</td>
+                <td><i class="fas fa-bookmark" style="color:#f59e0b;"></i> ${row.save}</td>
+                <td><span class="total-point">${row.total.toFixed(1)} pts</span></td>
+            `;
+            tbody.appendChild(tr);
+            if (row.hasAccount) rank++;
+        }
+        return sortedFull;
+    }
+    
+    // Format nama bulan ke Bahasa Indonesia
+    function formatMonth(monthStr) {
+        const [year, month] = monthStr.split('-');
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        return `${months[parseInt(month)-1]} ${year}`;
+    }
+    
+    // Download CSV (Excel)
+    function downloadCSV(data, month) {
+        let csvRows = [];
+        csvRows.push(["Peringkat","No","Nama Karyawan","Akun IG","Like","Komen","Share/Repost","Save","Total Skor"]);
+        let rankCounter = 1;
+        for (let row of data) {
+            let rankVal = row.hasAccount ? rankCounter++ : "-";
+            let igVal = row.hasAccount ? `@${row.ig}` : "Tidak punya akun";
+            csvRows.push([
+                rankVal, row.no, row.name, igVal, row.like, row.comment, row.share, row.save, row.total.toFixed(1)
+            ]);
+        }
+        const csvContent = csvRows.map(row => row.join(",")).join("\n");
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute("download", `Laporan_Interaksi_PawonMbahGito_${month}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+    
+    // Download PDF via html2pdf
+    async function downloadPDF(month) {
+        // Tampilkan indikator loading sederhana
+        const originalContainer = document.getElementById('reportContainer');
+        const cloneContainer = originalContainer.cloneNode(true);
+        const tempDiv = document.createElement('div');
+        tempDiv.style.background = "white";
+        tempDiv.style.padding = "20px";
+        tempDiv.style.fontFamily = "'Inter', sans-serif";
+        
+        const headerPdf = document.createElement('div');
+        headerPdf.innerHTML = `
+            <div style="text-align:center; margin-bottom:25px;">
+                <h2 style="color:#1e293b;">Pawon Mbah Gito - Laporan Partisipasi Karyawan</h2>
+                <p style="font-size:14px; color:#334155;">Periode: ${formatMonth(month)} | Data di-generate secara otomatis (simulasi interaksi)</p>
+                <hr style="margin: 15px 0;" />
+            </div>
+        `;
+        tempDiv.appendChild(headerPdf);
+        tempDiv.appendChild(cloneContainer);
+        
+        const opt = {
+            margin: [0.5, 0.5, 0.5, 0.5],
+            filename: `Laporan_Interaksi_${month}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, letterRendering: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+        };
+        try {
+            await html2pdf().set(opt).from(tempDiv).save();
+        } catch (err) {
+            console.error("PDF Error", err);
+            alert("Gagal generate PDF, silakan coba lagi.");
+        }
+    }
+
+    // Event Listener untuk tombol-tombol
+    document.getElementById('downloadCsvBtn').addEventListener('click', () => {
+        if (currentReportData.length) downloadCSV(currentReportData, currentMonth);
+        else alert("Data belum tersedia, silahkan klik 'Generate Data' terlebih dahulu.");
+    });
+    
+    document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+        if (currentReportData.length) downloadPDF(currentMonth);
+        else alert("Belum ada data, generate terlebih dahulu.");
+    });
+    
+    document.getElementById('refreshMonthBtn').addEventListener('click', async () => {
+        const selectedMonth = document.getElementById('monthSelector').value;
+        currentMonth = selectedMonth;
+        const displayText = `Periode: 1 - 30 ${formatMonth(currentMonth)}`;
+        document.getElementById('periodDisplay').innerHTML = `<i class="far fa-calendar-alt"></i> ${displayText}`;
+        await generateReport(currentMonth);
+    });
+    
+    // Inisialisasi awal : generate data untuk bulan default (2024-11)
+    async function init() {
+        await generateReport(currentMonth);
+        // Tidak ada auto refresh berkala karena sesuai permintaan "tidak real time, hitungan otomatis sebisanya sistem"
+        // Tapi dibiarkan user bisa klik generate kapan saja.
+    }
+    
+    init();
+</script>
+</body>
+</html>
+```
