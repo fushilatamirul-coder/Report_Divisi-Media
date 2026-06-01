@@ -85,10 +85,11 @@
         <h1><i class="fas fa-edit"></i> Pawon Mbah Gito · Laporan Interaksi Karyawan + Story</h1>
         <div class="sub">
             <div class="date-badge" id="periodDisplay"><i class="far fa-calendar-alt"></i> Periode: 1 - 30 November 2024</div>
-            <div class="manual-badge"><i class="fas fa-pen-alt"></i> Like = 10 Seragam | Bedakan Komen, Share, Save, Story</div>
+            <div class="manual-badge"><i class="fas fa-pen-alt"></i> Like = 10 Seragam | Karyawan tanpa akun = 0 Semua Poin</div>
         </div>
         <div style="margin-top: 16px; font-size: 13px; background: #2d3a4b; padding: 8px 15px; border-radius: 40px; display: inline-flex; gap: 12px; flex-wrap: wrap;">
-            <span><i class="fas fa-heart"></i> Semua Like = 10 (seragam)</span>
+            <span><i class="fas fa-heart"></i> Semua Like = 10 (seragam untuk yang punya akun)</span>
+            <span><i class="fas fa-ban"></i> Karyawan tanpa akun: semua nilai interaksi = 0</span>
             <span><i class="fas fa-trophy"></i> Peringkat: DONNY, AMIR, BAYU, RISKA, SEPTI, ROHMAN, ROSA, ...</span>
         </div>
     </div>
@@ -120,15 +121,15 @@
         <table id="reportTable">
             <thead>
                 <tr><th>Peringkat</th><th>No</th><th>Nama Karyawan</th><th>Akun Instagram</th>
-                    <th><i class="fas fa-heart"></i> Like (10)</th><th><i class="fas fa-comment"></i> Komen</th>
+                    <th><i class="fas fa-heart"></i> Like</th><th><i class="fas fa-comment"></i> Komen</th>
                     <th><i class="fas fa-retweet"></i> Share</th><th><i class="fas fa-bookmark"></i> Save</th>
                     <th><i class="fas fa-history"></i> Story</th><th>Total Skor</th><th>Aksi</th>
                 </tr>
             </thead>
-            <tbody id="tableBody"><tr><td colspan="11">Memuat data...</td></tr></tbody>
+            <tbody id="tableBody"><tr><td colspan="11">Memuat data......</td></tr></tbody>
         </table>
     </div>
-    <footer>✅ Like seragam = 10 poin. Skor = (Like*1)+(Komen*2)+(Share*3)+(Save*1.5)+(Story*0.8). Edit manual tersedia, batas Komen/Share/Save ≤10, Story ≤30.</footer>
+    <footer>✅ Like seragam = 10 poin (khusus yang punya akun). Karyawan tanpa akun otomatis 0 semua. Skor = (Like*1)+(Komen*2)+(Share*3)+(Save*1.5)+(Story*0.8). Export menampilkan seluruh data dengan urutan 1-5 teratas jelas.</footer>
 </div>
 
 <script>
@@ -161,7 +162,7 @@
         { no:51, name:"PAK TUGIMAN", ig:"", hasAccount:false }, { no:52, name:"PAK BAGYO", ig:"", hasAccount:false }
     ];
 
-    const STORAGE_KEY_PREFIX = "pawon_like10_";
+    const STORAGE_KEY_PREFIX = "pawon_like10_noacc_zero_";
     let currentMonth = "2024-11";
     let currentData = [];
 
@@ -174,36 +175,39 @@
         const saved = localStorage.getItem(key);
         if (saved) return JSON.parse(saved);
         
-        // DATA AWAL: LIKE SEMUA = 10, KOMEN/SHARE/SAVE/STORY DIBEDAKAN AGAR PERINGKAT SESUAI PERMINTAAN
-        const allDefault = employeesMaster.map(emp => ({
-            no: emp.no,
-            like: 10,      // SERAGAM 10
-            comment: 0,
-            share: 0,
-            save: 0,
-            story: 0
-        }));
+        // DATA AWAL: 
+        // - Karyawan dengan hasAccount TRUE: like = 10, lainnya diatur sesuai peringkat
+        // - Karyawan dengan hasAccount FALSE: semua = 0
+        const allDefault = employeesMaster.map(emp => {
+            if (!emp.hasAccount) {
+                return { no: emp.no, like: 0, comment: 0, share: 0, save: 0, story: 0 };
+            } else {
+                return { no: emp.no, like: 10, comment: 0, share: 0, save: 0, story: 0 };
+            }
+        });
         
-        // Set nilai khusus untuk 10 besar sesuai permintaan: DONNY, AMIR, BAYU, RISKA, SEPTI, ROHMAN, ROSA, dan lain-lain
-        // Dengan Like=10, maka perbedaan di komen, share, save, story
+        // Set nilai khusus untuk 10 besar (hanya yang punya akun)
         const specials = [
-            { no:30, comment:9, share:8, save:9, story:29 },  // DONNY -> skor tertinggi
+            { no:30, comment:9, share:8, save:9, story:29 },  // DONNY
             { no:37, comment:8, share:9, save:8, story:27 },  // AMIR
             { no:6,  comment:7, share:8, save:9, story:26 },  // BAYU
             { no:14, comment:8, share:6, save:7, story:24 },  // RISKA
             { no:29, comment:7, share:7, save:8, story:25 },  // SEPTIAN
             { no:7,  comment:6, share:6, save:6, story:22 },  // ROHMAN
             { no:16, comment:6, share:5, save:7, story:23 },  // ROSA
-            // 8-10 tambahan agar peringkat 8,9,10 terisi (contoh: SAMBAS, AGUNG, PUTRI)
             { no:1,  comment:5, share:5, save:6, story:20 },  // SAMBAS
             { no:5,  comment:5, share:4, save:6, story:19 },  // AGUNG
             { no:8,  comment:4, share:5, save:5, story:18 },  // PUTRI
-            // karyawan lain dengan nilai lebih kecil tapi tetap ada
+            { no:2,  comment:4, share:3, save:4, story:15 },  // CHARIKA
+            { no:3,  comment:3, share:4, save:4, story:14 },  // KAMAL
+            { no:4,  comment:3, share:3, save:3, story:12 },  // SONI
+            { no:9,  comment:3, share:2, save:3, story:11 },  // SOFAR
+            { no:10, comment:2, share:3, save:2, story:10 },  // AWLIYA
         ];
         
         for (let s of specials) {
             const idx = allDefault.findIndex(d => d.no === s.no);
-            if (idx !== -1) {
+            if (idx !== -1 && employeesMaster[idx]?.hasAccount) {
                 allDefault[idx].comment = s.comment;
                 allDefault[idx].share = s.share;
                 allDefault[idx].save = s.save;
@@ -211,23 +215,29 @@
             }
         }
         
-        // Beri nilai kecil untuk karyawan lain agar terlihat variatif (tidak nol semua)
+        // Beri nilai kecil untuk karyawan lain yang punya akun (tapi bukan tanpa akun)
         for (let emp of allDefault) {
-            if (emp.comment === 0 && emp.no !== 35 && emp.no !== 42 && emp.no !== 44 && emp.no !== 46 && emp.no !== 47 && emp.no !== 48 && emp.no !== 49 && emp.no !== 50 && emp.no !== 51 && emp.no !== 52) {
-                emp.comment = Math.floor(Math.random() * 3);
-                emp.share = Math.floor(Math.random() * 2);
-                emp.save = Math.floor(Math.random() * 3);
+            const empMaster = employeesMaster.find(e => e.no === emp.no);
+            if (empMaster && empMaster.hasAccount && emp.comment === 0 && emp.no !== 35 && emp.no !== 42 && emp.no !== 44 && emp.no !== 46 && emp.no !== 47 && emp.no !== 48 && emp.no !== 49 && emp.no !== 50 && emp.no !== 51 && emp.no !== 52) {
+                emp.comment = Math.floor(Math.random() * 4);
+                emp.share = Math.floor(Math.random() * 3);
+                emp.save = Math.floor(Math.random() * 4);
                 emp.story = Math.floor(Math.random() * 12);
             }
         }
         
-        // Pastikan tidak ada yang melebihi batas
+        // Pastikan batasan dan karyawan tanpa akun tetap 0
         for (let d of allDefault) {
-            if (d.comment > 10) d.comment = 10;
-            if (d.share > 10) d.share = 10;
-            if (d.save > 10) d.save = 10;
-            if (d.story > 30) d.story = 30;
-            if (d.like > 10) d.like = 10;
+            const empMaster = employeesMaster.find(e => e.no === d.no);
+            if (empMaster && !empMaster.hasAccount) {
+                d.like = 0; d.comment = 0; d.share = 0; d.save = 0; d.story = 0;
+            } else {
+                if (d.like > 10) d.like = 10;
+                if (d.comment > 10) d.comment = 10;
+                if (d.share > 10) d.share = 10;
+                if (d.save > 10) d.save = 10;
+                if (d.story > 30) d.story = 30;
+            }
         }
         return allDefault;
     }
@@ -238,7 +248,7 @@
 
     function renderAll() {
         const merged = employeesMaster.map(emp => {
-            const interaction = currentData.find(d => d.no === emp.no) || { like:10, comment:0, share:0, save:0, story:0 };
+            const interaction = currentData.find(d => d.no === emp.no) || { like: emp.hasAccount ? 10 : 0, comment: 0, share: 0, save: 0, story: 0 };
             const total = calcTotal(interaction.like, interaction.comment, interaction.share, interaction.save, interaction.story);
             return { ...emp, like: interaction.like, comment: interaction.comment, share: interaction.share, save: interaction.save, story: interaction.story, total };
         });
@@ -257,7 +267,7 @@
         const avgScore = withAccount.length ? (withAccount.reduce((s, r) => s + r.total, 0) / withAccount.length).toFixed(1) : 0;
         
         document.getElementById('statsGrid').innerHTML = `
-            <div class="stat-card"><div class="label">👥 Karyawan Aktif</div><div class="value">${withAccount.length} / 55</div></div>
+            <div class="stat-card"><div class="label">👥 Karyawan Aktif (punya akun)</div><div class="value">${withAccount.length} / 55</div></div>
             <div class="stat-card"><div class="label">❤️ Total Like (10 each)</div><div class="value">${totalLikes}</div></div>
             <div class="stat-card"><div class="label">💬 Total Komen</div><div class="value">${totalComments}</div></div>
             <div class="stat-card"><div class="label">🔄 Total Share</div><div class="value">${totalShares}</div></div>
@@ -284,13 +294,13 @@
                 <td>${row.no}</td>
                 <td><strong>${row.name}</strong></td>
                 <td>${igDisplay}</td>
-                <td><input type="number" class="edit-input like-input" value="${row.like}" min="0" max="10" step="1"></td>
-                <td><input type="number" class="edit-input comment-input" value="${row.comment}" min="0" max="10" step="1"></td>
-                <td><input type="number" class="edit-input share-input" value="${row.share}" min="0" max="10" step="1"></td>
-                <td><input type="number" class="edit-input save-input" value="${row.save}" min="0" max="10" step="1"></td>
-                <td><input type="number" class="edit-input story-input" value="${row.story}" min="0" max="30" step="1"></td>
+                <td><input type="number" class="edit-input like-input" value="${row.like}" min="0" max="10" step="1" ${!row.hasAccount ? 'disabled style="background:#f1f5f9;"' : ''}></td>
+                <td><input type="number" class="edit-input comment-input" value="${row.comment}" min="0" max="10" step="1" ${!row.hasAccount ? 'disabled style="background:#f1f5f9;"' : ''}></td>
+                <td><input type="number" class="edit-input share-input" value="${row.share}" min="0" max="10" step="1" ${!row.hasAccount ? 'disabled style="background:#f1f5f9;"' : ''}></td>
+                <td><input type="number" class="edit-input save-input" value="${row.save}" min="0" max="10" step="1" ${!row.hasAccount ? 'disabled style="background:#f1f5f9;"' : ''}></td>
+                <td><input type="number" class="edit-input story-input" value="${row.story}" min="0" max="30" step="1" ${!row.hasAccount ? 'disabled style="background:#f1f5f9;"' : ''}></td>
                 <td><span class="total-point" id="total-${row.no}">${row.total.toFixed(1)} pts</span></td>
-                <td><button class="update-btn" data-no="${row.no}"><i class="fas fa-save"></i> Simpan</button></td>
+                <td>${row.hasAccount ? `<button class="update-btn" data-no="${row.no}"><i class="fas fa-save"></i> Simpan</button>` : '<span class="badge-no-acc">Tidak aktif</span>'}</td>
             `;
             tbody.appendChild(tr);
             if (row.hasAccount) rank++;
@@ -341,8 +351,14 @@
     }
     
     function resetCurrentMonth() {
-        if (confirm(`Reset semua data interaksi untuk bulan ${currentMonth}? Semua nilai like akan menjadi 10, lainnya 0.`)) {
-            currentData = employeesMaster.map(emp => ({ no: emp.no, like: 10, comment: 0, share: 0, save: 0, story: 0 }));
+        if (confirm(`Reset semua data interaksi untuk bulan ${currentMonth}? Karyawan dengan akun akan direset like=10, komen/share/save/story=0. Karyawan tanpa akun tetap 0.`)) {
+            currentData = employeesMaster.map(emp => {
+                if (!emp.hasAccount) {
+                    return { no: emp.no, like: 0, comment: 0, share: 0, save: 0, story: 0 };
+                } else {
+                    return { no: emp.no, like: 10, comment: 0, share: 0, save: 0, story: 0 };
+                }
+            });
             saveDataForMonth(currentMonth, currentData);
             renderAll();
         }
@@ -359,7 +375,7 @@
     
     function exportCSV() {
         const merged = employeesMaster.map(emp => {
-            const inter = currentData.find(d => d.no === emp.no) || { like:10, comment:0, share:0, save:0, story:0 };
+            const inter = currentData.find(d => d.no === emp.no) || { like: emp.hasAccount ? 10 : 0, comment: 0, share: 0, save: 0, story: 0 };
             const total = calcTotal(inter.like, inter.comment, inter.share, inter.save, inter.story);
             return { ...emp, ...inter, total };
         });
@@ -372,7 +388,8 @@
         let rank = 1;
         for (let r of sorted) {
             let rankVal = r.hasAccount ? rank++ : "-";
-            rows.push([rankVal, r.no, r.name, r.hasAccount ? `@${r.ig}` : "Tidak punya akun", r.like, r.comment, r.share, r.save, r.story, r.total.toFixed(1)]);
+            let igVal = r.hasAccount ? (r.ig ? `@${r.ig}` : "Tidak ada IG") : "Tidak punya akun";
+            rows.push([rankVal, r.no, r.name, igVal, r.like, r.comment, r.share, r.save, r.story, r.total.toFixed(1)]);
         }
         const csv = rows.map(row => row.join(",")).join("\n");
         const blob = new Blob(["\uFEFF" + csv], {type: "text/csv;charset=utf-8;"});
@@ -384,14 +401,44 @@
     }
     
     async function exportPDF() {
-        const element = document.getElementById('reportContainer').cloneNode(true);
+        // Clone tabel dan buat header dengan tampilan peringkat 1-5
+        const originalTable = document.getElementById('reportContainer');
+        const element = originalTable.cloneNode(true);
+        
+        // Dapatkan data 5 teratas untuk ditampilkan di header PDF
+        const merged = employeesMaster.map(emp => {
+            const inter = currentData.find(d => d.no === emp.no) || { like: emp.hasAccount ? 10 : 0, comment: 0, share: 0, save: 0, story: 0 };
+            const total = calcTotal(inter.like, inter.comment, inter.share, inter.save, inter.story);
+            return { ...emp, ...inter, total };
+        });
+        const top5 = merged.filter(m => m.hasAccount).sort((a,b) => b.total - a.total).slice(0,5);
+        
+        let top5Html = '<div style="margin-top:10px; margin-bottom:20px;"><h3 style="color:#f59e0b;">🏆 5 Besar Skor Tertinggi</h3><table style="width:100%; border-collapse:collapse; font-size:12px; margin-top:8px;"><thead><tr style="background:#fef3c7;"><th>Peringkat</th><th>Nama</th><th>Like</th><th>Komen</th><th>Share</th><th>Save</th><th>Story</th><th>Total Skor</th></tr></thead><tbody>';
+        top5.forEach((emp, idx) => {
+            top5Html += `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:6px;">${idx+1}</td><td style="padding:6px; font-weight:bold;">${emp.name}</td><td style="padding:6px;">${emp.like}</td><td style="padding:6px;">${emp.comment}</td><td style="padding:6px;">${emp.share}</td><td style="padding:6px;">${emp.save}</td><td style="padding:6px;">${emp.story}</td><td style="padding:6px; font-weight:bold;">${emp.total.toFixed(1)}</td></tr>`;
+        });
+        top5Html += '</tbody></table></div><hr/>';
+        
         const headerDiv = document.createElement('div');
         const monthFormatted = document.getElementById('periodDisplay').innerText;
-        headerDiv.innerHTML = `<div style="text-align:center; margin-bottom:20px;"><h2>Pawon Mbah Gito - Laporan Interaksi</h2><p>${monthFormatted} | Like seragam 10 poin</p><hr/></div>`;
+        headerDiv.innerHTML = `
+            <div style="text-align:center; margin-bottom:20px; font-family:'Inter',sans-serif;">
+                <h2>Pawon Mbah Gito - Laporan Interaksi Karyawan</h2>
+                <p>${monthFormatted} | Like seragam 10 poin (khusus yang punya akun) | Karyawan tanpa akun = 0</p>
+                ${top5Html}
+            </div>
+        `;
         const wrapper = document.createElement('div');
         wrapper.appendChild(headerDiv);
         wrapper.appendChild(element);
-        await html2pdf().set({ margin: [0.5,0.5,0.5,0.5], filename: `Laporan_Interaksi_${currentMonth}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } }).from(wrapper).save();
+        
+        await html2pdf().set({ 
+            margin: [0.5,0.5,0.5,0.5], 
+            filename: `Laporan_Interaksi_${currentMonth}.pdf`, 
+            image: { type: 'jpeg', quality: 0.98 }, 
+            html2canvas: { scale: 2 }, 
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } 
+        }).from(wrapper).save();
     }
     
     document.getElementById('resetAllBtn').addEventListener('click', resetCurrentMonth);
